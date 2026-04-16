@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Система бронирования</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .room { border: 1px solid #ccc; margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .inactive { opacity: 0.5; background: #f0f0f0; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .admin-panel { background: #ffe0e0; padding: 15px; margin-top: 30px; }
+    </style>
+</head>
+<body>
+<h1>Система бронирования номеров</h1>
+
+<div id="auth-section">
+    <h2>Вход</h2>
+    <input type="text" id="login" placeholder="Логин" value="admin">
+    <input type="password" id="password" placeholder="Пароль" value="12345">
+    <button onclick="login()">Войти</button>
+    <p id="auth-message"></p>
+</div>
+
+<div id="rooms-section" style="display:none;">
+    <h2>Номера</h2>
+    <div id="rooms-list"></div>
+</div>
+
+<div id="admin-section" style="display:none;" class="admin-panel">
+    <h2>Панель администратора</h2>
+    <div id="bookings-list"></div>
+</div>
+
+<script>
+    let currentUser = null;
+
+    async function login() {
+        const login = document.getElementById('login').value;
+        const password = document.getElementById('password').value;
+
+        const formData = new FormData();
+        formData.append('login', login);
+        formData.append('password', password);
+
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentUser = data.user;
+            document.getElementById('auth-message').innerText = 'Вход выполнен: ' + currentUser.name;
+            document.getElementById('rooms-section').style.display = 'block';
+
+            if (currentUser.role === 'admin') {
+                document.getElementById('admin-section').style.display = 'block';
+                loadBookings();
+            }
+
+            loadRooms();
+        } else {
+            document.getElementById('auth-message').innerText = data.message;
+        }
+    }
+
+    async function loadRooms() {
+        const response = await fetch('/api/rooms');
+        const rooms = await response.json();
+
+        const html = rooms.map(room => `
+            <div class="room ${room.active ? '' : 'inactive'}">
+                <h3>${room.title}</h3>
+                <p>${room.description}</p>
+                <p><strong>Цена:</strong> ${room.price} руб.</p>
+                <p><strong>Статус:</strong> ${room.active ? 'Активен' : 'Неактивен'}</p>
+                ${room.active && currentUser.role === 'client' ?
+                    `<button onclick="bookRoom(${room.id})">Забронировать</button>` : ''}
+                ${currentUser.role === 'admin' ?
+                    `<button onclick="toggleRoom(${room.id})">Сменить статус</button>` : ''}
+            </div>
+        `).join('');
+
+        document.getElementById('rooms-list').innerHTML = html;
+    }
+
+    async function toggleRoom(roomId) {
+        await fetch('/api/rooms/' + roomId + '/toggle', { method: 'POST' });
+        loadRooms();
+    }
+
+    async function bookRoom(roomId) {
+        const date = prompt('Введите дату (ГГГГ-ММ-ДД):', '2026-05-01');
+        if (!date) return;
+
+        const formData = new FormData();
+        formData.append('clientId', currentUser.id);
+        formData.append('roomId', roomId);
+        formData.append('date', date);
+
+        const response = await fetch('/api/bookings/create', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+        alert('Бронь создана! Статус: ' + data.booking.status);
+    }
+
+    async function loadBookings() {
+        const response = await fetch('/api/bookings');
+        const bookings = await response.json();
+
+        const html = bookings.map(b => `
+            <div style="border:1px solid #999; margin:5px; padding:10px;">
+                <p>ID: ${b.id} | Клиент: ${b.clientId} | Номер: ${b.roomId}</p>
+                <p>Дата: ${b.date} | Цена: ${b.price} | Статус: ${b.status}</p>
+                ${b.status === 'pending' ? `
+                    <button onclick="approveBooking(${b.id})">Одобрить</button>
+                    <button onclick="rejectBooking(${b.id})">Отклонить</button>
+                ` : ''}
+            </div>
+        `).join('');
+
+        document.getElementById('bookings-list').innerHTML = '<h3>Заявки на бронирование</h3>' + html;
+    }
+
+    async function approveBooking(id) {
+        await fetch('/api/bookings/' + id + '/approve', { method: 'POST' });
+        loadBookings();
+    }
+
+    async function rejectBooking(id) {
+        const reason = prompt('Причина отказа:');
+        if (!reason) return;
+
+        const formData = new FormData();
+        formData.append('reason', reason);
+
+        await fetch('/api/bookings/' + id + '/reject', { method: 'POST', body: formData });
+        loadBookings();
+    }
+</script>
+</body>
+</html>
