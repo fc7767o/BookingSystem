@@ -19,7 +19,7 @@
     <h1>Панель администратора</h1>
     <button onclick="logout()">Выйти</button>
 </div>
-
+<h2>📋 Заявки на бронирование</h2>
 <div class="filter-bar">
     <button class="filter-btn active" data-filter="all" onclick="filterBookings('all')">Все</button>
     <button class="filter-btn" data-filter="pending" onclick="filterBookings('pending')">Ожидают</button>
@@ -28,11 +28,14 @@
     <button class="filter-btn" data-filter="paid" onclick="filterBookings('paid')">Оплачены</button>
     <button onclick="checkExpired()">Проверить просроченные</button>
 </div>
+<h2 id="rooms-title">🏨 Управление номерами</h2>
+<div id="rooms-section">
+    <div id="rooms-management"></div>
+</div>
 
-<h2>Управление номерами</h2>
-<div id="rooms-management"></div>
+<hr>
 
-<h2>Заявки на бронирование</h2>
+
 <div id="bookings-list"></div>
 
 <script>
@@ -109,42 +112,57 @@
         renderBookings();
     }
 
-    function renderBookings() {
-        let filtered = allBookings;
+function renderBookings() {
+    let filtered = allBookings;
 
-        if (currentFilter !== 'all') {
-            filtered = allBookings.filter(b => b.status === currentFilter);
-        }
-
-        console.log('Отфильтровано заявок:', filtered.length, 'по фильтру:', currentFilter);
-
-        if (filtered.length === 0) {
-            document.getElementById('bookings-list').innerHTML = '<p>Нет заявок</p>';
-            return;
-        }
-
-        const html = filtered.reverse().map(booking => {
-            const room = allRooms.find(r => r.id === booking.roomId);
-
-            return `
-                <div class="booking-card">
-                    <p><strong>ID брони:</strong> ${booking.id}</p>
-                    <p><strong>Клиент ID:</strong> ${booking.clientId}</p>
-                    <p><strong>Номер:</strong> ${room?.title || 'ID ' + booking.roomId}</p>
-                    <p><strong>Дата:</strong> ${booking.date}</p>
-                    <p><strong>Цена:</strong> ${booking.price} руб</p>
-                    <p><strong>Статус:</strong> ${booking.status}</p>
-                    ${booking.reason ? `<p><strong>Причина отказа:</strong> ${booking.reason}</p>` : ''}
-                    ${booking.status === 'pending' ? `
-                        <button onclick="approveBooking(${booking.id})">✅ Одобрить</button>
-                        <button onclick="rejectBooking(${booking.id})">❌ Отклонить</button>
-                    ` : ''}
-                </div>
-            `;
-        }).join('');
-
-        document.getElementById('bookings-list').innerHTML = html;
+    if (currentFilter !== 'all') {
+        filtered = allBookings.filter(b => b.status === currentFilter);
     }
+
+    console.log('Отфильтровано заявок:', filtered.length, 'по фильтру:', currentFilter);
+
+    const container = document.getElementById('bookings-list');
+
+    // ОЧИЩАЕМ ПОЛНОСТЬЮ
+    container.innerHTML = '';
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p>Нет заявок с таким статусом</p>';
+        return;
+    }
+
+    // Создаём HTML для каждой заявки
+    filtered.reverse().forEach(booking => {
+        const room = allRooms.find(r => r.id === booking.roomId);
+
+        const card = document.createElement('div');
+        card.className = 'booking-card';
+
+        const statusText = {
+            'pending': '⏳ Ожидает',
+            'approved': '✅ Одобрено',
+            'rejected': '❌ Отклонено',
+            'paid': '💰 Оплачено',
+            'expired': '⌛ Просрочено'
+        }[booking.status] || booking.status;
+
+        card.innerHTML = `
+            <p><strong>ID брони:</strong> ${booking.id}</p>
+            <p><strong>Клиент ID:</strong> ${booking.clientId}</p>
+            <p><strong>Номер:</strong> ${room?.title || 'ID ' + booking.roomId}</p>
+            <p><strong>Дата:</strong> ${booking.date}</p>
+            <p><strong>Цена:</strong> ${booking.price} руб</p>
+            <p><strong>Статус:</strong> ${statusText}</p>
+            ${booking.reason ? `<p><strong>Причина отказа:</strong> ${booking.reason}</p>` : ''}
+            ${booking.status === 'pending' ? `
+                <button onclick="approveBooking(${booking.id})">✅ Одобрить</button>
+                <button onclick="rejectBooking(${booking.id})">❌ Отклонить</button>
+            ` : ''}
+        `;
+
+        container.appendChild(card);
+    });
+}
 
     async function approveBooking(id) {
         await fetch('/api/bookings/' + id + '/approve', { method: 'POST' });
@@ -171,19 +189,33 @@
         loadAllBookings();
     }
 
-    function filterBookings(filter) {
-        currentFilter = filter;
+function filterBookings(filter) {
+    currentFilter = filter;
 
-        // Обновляем активный класс на кнопках
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.getAttribute('data-filter') === filter) {
-                btn.classList.add('active');
-            }
-        });
+    // Обновляем активный класс на кнопках
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-filter') === filter) {
+            btn.classList.add('active');
+        }
+    });
 
-        renderBookings();
+    // Скрываем/показываем блок с номерами
+    const roomsSection = document.getElementById('rooms-section');
+    const roomsTitle = document.querySelector('h2'); // Первый заголовок "Управление номерами"
+
+    if (filter === 'all') {
+        // Показываем номера
+        if (roomsSection) roomsSection.style.display = 'block';
+        if (roomsTitle) roomsTitle.style.display = 'block';
+    } else {
+        // Скрываем номера
+        if (roomsSection) roomsSection.style.display = 'none';
+        if (roomsTitle) roomsTitle.style.display = 'none';
     }
+
+    renderBookings();
+}
 
     async function checkExpired() {
         const response = await fetch('/api/bookings');

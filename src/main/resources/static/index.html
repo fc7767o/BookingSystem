@@ -2,11 +2,50 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=/login.html">
-    <title>Система бронирования</title>
+    <title>Вход</title>
+    <style>
+        body { font-family: Arial; max-width: 400px; margin: 50px auto; }
+        input { width: 100%; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; background: #2196F3; color: white; border: none; }
+    </style>
 </head>
 <body>
-<p>Перенаправление на страницу входа...</p>
-<p>Если переход не произошёл автоматически, <a href="/login.html">нажмите здесь</a>.</p>
+<h1>Вход в систему</h1>
+<form id="login-form">
+    <input type="text" id="login" placeholder="Логин" value="admin">
+    <input type="password" id="password" placeholder="Пароль" value="12345">
+    <button type="submit">Войти</button>
+</form>
+<p>Нет аккаунта? <a href="register.html">Зарегистрироваться</a></p>
+<p id="message"></p>
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+        formData.append('login', document.getElementById('login').value);
+        formData.append('password', document.getElementById('password').value);
+
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            sessionStorage.setItem('user', JSON.stringify(data.user));
+
+            if (data.role === 'admin') {
+                window.location.href = 'admin.html';
+            } else {
+                window.location.href = 'client.html';
+            }
+        } else {
+            document.getElementById('message').innerText = data.message;
+        }
+    });
+</script>
 </body>
 </html>
