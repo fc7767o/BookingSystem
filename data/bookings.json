@@ -1,0 +1,28 @@
+[ {
+  "id" : 1,
+  "clientId" : 2,
+  "roomId" : 2,
+  "date" : "2026-04-18",
+  "status" : "paid",
+  "price" : 7000.0,
+  "reason" : null,
+  "createdAt" : "2026-04-17T12:35:44.8947913"
+}, {
+  "id" : 2,
+  "clientId" : 2,
+  "roomId" : 3,
+  "date" : "2026-04-18",
+  "status" : "rejected",
+  "price" : 5000.0,
+  "reason" : "1",
+  "createdAt" : "2026-04-17T12:36:26.626572"
+}, {
+  "id" : 3,
+  "clientId" : 2,
+  "roomId" : 3,
+  "date" : "2026-04-18",
+  "status" : "pending",
+  "price" : 5000.0,
+  "reason" : null,
+  "createdAt" : "2026-04-17T12:36:58.890378"
+} ]
