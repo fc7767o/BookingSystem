@@ -11,4 +11,18 @@
   "name" : "1",
   "phone" : "1",
   "role" : "client"
+}, {
+  "id" : 3,
+  "login" : "111",
+  "password" : "111",
+  "name" : "111",
+  "phone" : "111",
+  "role" : "client"
+}, {
+  "id" : 4,
+  "login" : "111",
+  "password" : "111",
+  "name" : "111",
+  "phone" : "111",
+  "role" : "client"
 } ]

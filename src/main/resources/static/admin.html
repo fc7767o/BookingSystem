@@ -5,38 +5,115 @@
     <title>Панель администратора</title>
     <style>
         body { font-family: Arial; max-width: 1200px; margin: 20px auto; }
-        .room-card { border: 1px solid #ccc; margin: 10px 0; padding: 15px; }
-        .booking-card { border: 1px solid #ddd; margin: 10px 0; padding: 10px; }
-        .header { display: flex; justify-content: space-between; }
-        button { padding: 5px 10px; margin: 3px; cursor: pointer; }
-        .filter-bar { margin: 20px 0; }
-        .filter-btn { padding: 8px 15px; margin: 0 5px; }
-        .filter-btn.active { background: #4CAF50; color: white; }
+.room-card { border: 1px solid #ccc; margin: 10px 0; padding: 15px; border-radius: 8px; }
+.booking-card { border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 8px; }
+.header { display: flex; justify-content: space-between; align-items: center; }
+button { padding: 8px 15px; margin: 3px; cursor: pointer; border-radius: 5px; border: none; }
+
+/* Главные вкладки */
+.main-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+    border-bottom: 2px solid #FFB6C1; /* Розовый */
+}
+.main-tab {
+    padding: 12px 30px;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.main-tab.active {
+    background: #FF69B4; /* Ярко-розовый */
+    color: white;
+}
+
+/* Фильтры заявок */
+.filter-bar {
+    margin: 20px 0;
+    padding: 10px;
+    background: #FFF0F5; /* Светло-розовый */
+    border-radius: 8px;
+}
+.filter-btn {
+    padding: 8px 15px;
+    margin: 0 5px;
+    background: #FFB6C1; /* Светло-розовый */
+    color: white;
+}
+.filter-btn.active {
+    background: #FF1493; /* Тёмно-розовый */
+    color: white;
+}
+
+/* Сетка для номеров */
+.rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.room-card img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+
+
+#pending-badge {
+    animation: pulse 1s infinite;
+}
+
     </style>
 </head>
 <body>
 <div class="header">
     <h1>Панель администратора</h1>
-    <button onclick="logout()">Выйти</button>
-</div>
-<h2>Заявки на бронирование</h2>
-<div class="filter-bar">
-    <button class="filter-btn active" data-filter="all" onclick="filterBookings('all')">Все</button>
-    <button class="filter-btn" data-filter="pending" onclick="filterBookings('pending')">Ожидают</button>
-    <button class="filter-btn" data-filter="approved" onclick="filterBookings('approved')">Одобрены</button>
-    <button class="filter-btn" data-filter="rejected" onclick="filterBookings('rejected')">Отклонены</button>
-    <button class="filter-btn" data-filter="paid" onclick="filterBookings('paid')">Оплачены</button>
-    <button class="filter-btn" data-filter="expired" onclick="filterBookings('expired')">Просрочены</button>
-    <button onclick="checkExpired()">Проверить просроченные</button>
-</div>
-<div id="rooms-section">
-    <div id="rooms-management"></div>
+    <button onclick="logout()" style="background:#FF69B4; color:white;">Выйти</button>
 </div>
 
-<hr>
+<!-- ГЛАВНЫЕ ВКЛАДКИ -->
+<div class="main-tabs">
+    <button class="main-tab active" onclick="showMainTab('rooms')">Номера</button>
+    <button class="main-tab" onclick="showMainTab('bookings')">
+        Заявки
+        <span id="pending-badge" style="
+            display: none;
+            background: #FF1493;
+            color: white;
+            border-radius: 20px;
+            padding: 2px 8px;
+            margin-left: 8px;
+            font-size: 12px;
+            font-weight: bold;
+        "></span>
+    </button>
+</div>
 
+<!-- ПАНЕЛЬ НОМЕРОВ -->
+<div id="rooms-panel">
+    <div id="rooms-management" class="rooms-grid"></div>
+</div>
 
-<div id="bookings-list"></div>
+<!-- ПАНЕЛЬ ЗАЯВОК -->
+<div id="bookings-panel" style="display: none;">
+    <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all" onclick="filterBookings('all')">Все</button>
+        <button class="filter-btn" data-filter="pending" onclick="filterBookings('pending')">Ожидают</button>
+        <button class="filter-btn" data-filter="approved" onclick="filterBookings('approved')">Одобрены</button>
+        <button class="filter-btn" data-filter="rejected" onclick="filterBookings('rejected')">Отклонены</button>
+        <button class="filter-btn" data-filter="paid" onclick="filterBookings('paid')">Оплачены</button>
+        <button class="filter-btn" data-filter="expired" onclick="filterBookings('expired')">Просрочены</button>
+
+    </div>
+    <div id="bookings-list"></div>
+</div>
 
 <script>
     let currentUser = JSON.parse(sessionStorage.getItem('user'));
@@ -53,27 +130,51 @@
         window.location.href = '/';
     }
 
+    // Переключение главных вкладок
+    function showMainTab(tab) {
+        const roomsPanel = document.getElementById('rooms-panel');
+        const bookingsPanel = document.getElementById('bookings-panel');
+        const tabs = document.querySelectorAll('.main-tab');
+
+        tabs.forEach(t => t.classList.remove('active'));
+
+        if (tab === 'rooms') {
+            roomsPanel.style.display = 'block';
+            bookingsPanel.style.display = 'none';
+            tabs[0].classList.add('active');
+            loadRoomsForAdmin();
+        } else {
+            roomsPanel.style.display = 'none';
+            bookingsPanel.style.display = 'block';
+            tabs[1].classList.add('active');
+            loadAllBookings();
+        }
+    }
+
     async function loadRoomsForAdmin() {
         const response = await fetch('/api/rooms');
         allRooms = await response.json();
 
         const html = allRooms.map(room => `
             <div class="room-card">
+                <img src="${room.photo}"
+                     alt="${room.title}"
+                     onerror="this.src='https://picsum.photos/400/200?random=${room.id}'">
                 <h3>${room.title} (ID: ${room.id})</h3>
                 <p>${room.description}</p>
                 <p>
                     <strong>Цена:</strong>
-                    <input type="number" id="price-${room.id}" value="${room.price}" step="100">
-                    <button onclick="updatePrice(${room.id})">Обновить цену</button>
+                    <input type="number" id="price-${room.id}" value="${room.price}" step="100" style="width:100px;">
+                    <button onclick="updatePrice(${room.id})" style="background:#FF69B4; color:white;">Обновить</button>
                 </p>
                 <p>
                     <strong>Статус:</strong>
-                    <span style="color: ${room.active ? 'green' : 'red'}">
+                    <span style="color: ${room.active ? 'green' : 'red'}; font-weight:bold;">
                         ${room.active ? 'Активен' : 'Неактивен'}
                     </span>
-                    <button onclick="toggleRoom(${room.id})">
-                        ${room.active ? 'Деактивировать' : 'Активировать'}
-                    </button>
+                    <button onclick="toggleRoom(${room.id})" style="background:#FF69B4; color:white;">
+    ${room.active ? 'Деактивировать' : 'Активировать'}
+</button>
                 </p>
             </div>
         `).join('');
@@ -83,7 +184,6 @@
 
     async function updatePrice(roomId) {
         const price = document.getElementById(`price-${roomId}`).value;
-
         const formData = new FormData();
         formData.append('price', price);
 
@@ -101,68 +201,96 @@
         loadRoomsForAdmin();
     }
 
-    async function loadAllBookings() {
-        console.log('Загружаем все заявки...');
+async function loadAllBookings() {
+    console.log('Загружаем все заявки...');
+    const response = await fetch('/api/bookings');
+    allBookings = await response.json();
+    console.log('Загружено заявок:', allBookings.length);
 
-        const response = await fetch('/api/bookings');
-        allBookings = await response.json();
-
-        console.log('Загружено заявок:', allBookings.length);
-
-        renderBookings();
+    // Загружаем комнаты если ещё не загружены
+    if (allRooms.length === 0) {
+        const roomsResponse = await fetch('/api/rooms');
+        allRooms = await roomsResponse.json();
     }
 
-function renderBookings() {
-    let filtered = allBookings;
+    // Обновляем счётчик ожидающих заявок
+    updatePendingBadge();
 
-    if (currentFilter !== 'all') {
-        filtered = allBookings.filter(b => b.status === currentFilter);
-    }
-
-    console.log('Отфильтровано заявок:', filtered.length, 'по фильтру:', currentFilter);
-
-    const container = document.getElementById('bookings-list');
-
-    // ОЧИЩАЕМ ПОЛНОСТЬЮ
-    container.innerHTML = '';
-
-    if (filtered.length === 0) {
-        container.innerHTML = '<p>Нет заявок с таким статусом</p>';
-        return;
-    }
-
-    // Создаём HTML для каждой заявки
-    filtered.reverse().forEach(booking => {
-        const room = allRooms.find(r => r.id === booking.roomId);
-
-        const card = document.createElement('div');
-        card.className = 'booking-card';
-
-        const statusText = {
-            'pending': 'Ожидает',
-            'approved': 'Одобрено',
-            'rejected': 'Отклонено',
-            'paid': 'Оплачено',
-            'expired': 'Просрочено'
-        }[booking.status] || booking.status;
-
-        card.innerHTML = `
-            <p><strong>ID брони:</strong> ${booking.id}</p>
-            <p><strong>Клиент ID:</strong> ${booking.clientId}</p>
-            <p><strong>Номер:</strong> ${room?.title || 'ID ' + booking.roomId}</p>
-            <p><strong>Дата:</strong> ${booking.date}</p>
-            <p><strong>Цена:</strong> ${booking.price} руб</p>
-            <p><strong>Статус:</strong> ${statusText}</p>
-            ${booking.reason ? `<p><strong>Причина отказа:</strong> ${booking.reason}</p>` : ''}
-            ${booking.status === 'pending' ? `
-                <button onclick="approveBooking(${booking.id})">Одобрить</button>
-                <button onclick="rejectBooking(${booking.id})">Отклонить</button>
-            ` : ''}
-        `;
-
-        container.appendChild(card);
-    });
+    renderBookings();
 }
+
+    function renderBookings() {
+        let filtered = allBookings;
+
+        if (currentFilter !== 'all') {
+            filtered = allBookings.filter(b => b.status === currentFilter);
+        }
+
+        console.log('Отфильтровано заявок:', filtered.length, 'по фильтру:', currentFilter);
+
+        const container = document.getElementById('bookings-list');
+        container.innerHTML = '';
+
+        const filterNames = {
+            'all': 'Все заявки',
+            'pending': 'Ожидающие заявки',
+            'approved': 'Одобренные заявки',
+            'rejected': 'Отклонённые заявки',
+            'paid': 'Оплаченные заявки',
+            'expired': 'Просроченные заявки'
+        };
+
+        const header = document.createElement('h3');
+        header.innerText = filterNames[currentFilter] || 'Заявки';
+        container.appendChild(header);
+
+        if (filtered.length === 0) {
+            container.innerHTML += '<p>Нет заявок с таким статусом</p>';
+            return;
+        }
+
+        filtered.reverse().forEach(booking => {
+            const room = allRooms.find(r => r.id === booking.roomId);
+
+            const card = document.createElement('div');
+            card.className = 'booking-card';
+            card.style.display = 'flex';
+            card.style.gap = '20px';
+            card.style.alignItems = 'flex-start';
+
+            const statusText = {
+                'pending': 'Ожидает',
+                'approved': 'Одобрено',
+                'rejected': 'Отклонено',
+                'paid': 'Оплачено',
+                'expired': 'Просрочено'
+            }[booking.status] || booking.status;
+
+            const photoUrl = room?.photo || 'https://picsum.photos/150/100?random=' + booking.roomId;
+
+            card.innerHTML = `
+                <img src="${photoUrl}"
+                     alt="${room?.title || 'Номер'}"
+                     style="width: 150px; height: 100px; object-fit: cover; border-radius: 8px;"
+                     onerror="this.src='https://picsum.photos/150/100?random=${booking.id}'">
+                <div style="flex: 1;">
+                    <p><strong>ID брони:</strong> ${booking.id}</p>
+                    <p><strong>Клиент ID:</strong> ${booking.clientId}</p>
+                    <p><strong>Номер:</strong> ${room?.title || 'ID ' + booking.roomId}</p>
+                    <p><strong>Дата:</strong> ${booking.date}</p>
+                    <p><strong>Цена:</strong> ${booking.price} руб</p>
+                    <p><strong>Статус:</strong> ${statusText}</p>
+                    ${booking.reason ? `<p><strong> Причина отказа:</strong> ${booking.reason}</p>` : ''}
+                    ${booking.status === 'pending' ? `
+                        <button onclick="approveBooking(${booking.id})" style="background:#FFB6C1; color:white;">Одобрить</button>
+                        <button onclick="rejectBooking(${booking.id})" style="background:#FF69B4; color:white;">Отклонить</button>
+                    ` : ''}
+                </div>
+            `;
+
+            container.appendChild(card);
+        });
+    }
 
     async function approveBooking(id) {
         await fetch('/api/bookings/' + id + '/approve', { method: 'POST' });
@@ -189,70 +317,69 @@ function renderBookings() {
         loadAllBookings();
     }
 
-function filterBookings(filter) {
-    currentFilter = filter;
+    function filterBookings(filter) {
+        currentFilter = filter;
 
-    // Обновляем активный класс на кнопках
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('data-filter') === filter) {
-            btn.classList.add('active');
-        }
-    });
-
-    // Скрываем/показываем блок с номерами
-    const roomsSection = document.getElementById('rooms-section');
-    const roomsTitle = document.querySelector('h2'); // Первый заголовок "Управление номерами"
-
-    if (filter === 'all') {
-        // Показываем номера
-        if (roomsSection) roomsSection.style.display = 'block';
-        if (roomsTitle) roomsTitle.style.display = 'block';
-    } else {
-        // Скрываем номера
-        if (roomsSection) roomsSection.style.display = 'none';
-        if (roomsTitle) roomsTitle.style.display = 'none';
-    }
-
-    renderBookings();
-}
-
-    async function checkExpired() {
-        const response = await fetch('/api/bookings');
-        const bookings = await response.json();
-
-        const now = new Date();
-        let expiredCount = 0;
-
-        for (let b of bookings) {
-            if (b.status === 'approved' && b.createdAt) {
-                const createdAt = new Date(b.createdAt);
-                const hoursPassed = (now - createdAt) / (1000 * 60 * 60);
-
-                if (hoursPassed > 24) {
-                    expiredCount++;
-                }
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-filter') === filter) {
+                btn.classList.add('active');
             }
-        }
+        });
 
-        alert(`Найдено просроченных броней (более 24 часов без оплаты): ${expiredCount}`);
+        renderBookings();
     }
 
     async function checkExpired() {
-    const response = await fetch('/api/bookings/check-expired', {
-        method: 'POST'
-    });
+        const response = await fetch('/api/bookings/check-expired', {
+            method: 'POST'
+        });
 
-    const data = await response.json();
-    alert(data.message || 'Проверка выполнена');
+        const data = await response.json();
+        alert(data.message || 'Проверка выполнена');
+        loadAllBookings();
+    }
 
-    // Перезагружаем список заявок
-    loadAllBookings();
+
+function updatePendingBadge() {
+    const pendingCount = allBookings.filter(b => b.status === 'pending').length;
+    const badge = document.getElementById('pending-badge');
+
+    if (pendingCount > 0) {
+        badge.style.display = 'inline-block';
+        badge.textContent = pendingCount;
+
+        // Анимация мигания для новых заявок
+        badge.style.animation = 'pulse 1s infinite';
+    } else {
+        badge.style.display = 'none';
+    }
 }
+
+// Автообновление заявок каждые 30 секунд (для проверки новых)
+setInterval(async () => {
+    const response = await fetch('/api/bookings');
+    const newBookings = await response.json();
+
+    const oldPendingCount = allBookings.filter(b => b.status === 'pending').length;
+    const newPendingCount = newBookings.filter(b => b.status === 'pending').length;
+
+    if (newPendingCount > oldPendingCount) {
+        allBookings = newBookings;
+        updatePendingBadge();
+
+        // Если мы на вкладке заявок — обновляем список
+        if (document.getElementById('bookings-panel').style.display === 'block') {
+            renderBookings();
+        }
+
+
+        console.log('Новая заявка');
+    }
+}, 30000); // каждые 30 секунд
 
     // Загрузка при старте
     loadRoomsForAdmin();
-    loadAllBookings();
 </script>
 </body>
 </html>

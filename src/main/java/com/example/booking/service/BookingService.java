@@ -29,7 +29,7 @@ public class BookingService {
             nextId = bookings.stream().mapToInt(Booking::getId).max().orElse(0) + 1;
         }
 
-        System.out.println("📂 Загружено бронирований: " + bookings.size());
+        System.out.println("Загружено бронирований: " + bookings.size());
     }
 
     private void save() {
@@ -56,7 +56,7 @@ public class BookingService {
         Booking booking = new Booking(nextId++, clientId, roomId, date, price);
         bookings.add(booking);
         save();
-        System.out.println("✅ Создана заявка #" + booking.getId());
+        System.out.println("Создана заявка #" + booking.getId());
         return booking;
     }
 
@@ -65,7 +65,7 @@ public class BookingService {
         if (booking != null) {
             booking.approve();
             save();
-            System.out.println("✅ Заявка #" + id + " одобрена");
+            System.out.println("Заявка #" + id + " одобрена");
         }
     }
 
@@ -74,7 +74,7 @@ public class BookingService {
         if (booking != null) {
             booking.reject(reason);
             save();
-            System.out.println("❌ Заявка #" + id + " отклонена");
+            System.out.println("Заявка #" + id + " отклонена");
         }
     }
 
@@ -83,21 +83,21 @@ public class BookingService {
         if (booking != null) {
             booking.setStatus("paid");
             save();
-            System.out.println("💰 Заявка #" + id + " оплачена");
+            System.out.println("Заявка #" + id + " оплачена");
         }
     }
 
-    @Scheduled(fixedRate = 1800000) // 30 минут
+    @Scheduled(fixedRate = 1800000) // 60000
     public void autoExpireBookings() {
         LocalDateTime now = LocalDateTime.now();
         boolean changed = false;
 
         for (Booking b : bookings) {
             if (b.getStatus().equals("approved")) {
-                if (b.getCreatedAt().plusHours(24).isBefore(now)) {
+                if (b.getCreatedAt().plusHours(24).isBefore(now)) { //plusMinutes(1)
                     b.setStatus("expired");
                     changed = true;
-                    System.out.println("⏰ Бронь #" + b.getId() + " просрочена");
+                    System.out.println("Бронь #" + b.getId() + " просрочена");
                 }
             }
         }

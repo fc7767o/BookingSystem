@@ -20,19 +20,16 @@ public class RoomService {
 
     @PostConstruct
     public void init() {
-        // Загружаем комнаты из файла
         rooms = storageService.loadList(FILE_NAME, Room.class);
 
         if (rooms.isEmpty()) {
-            // Если файл пустой — добавляем тестовые номера
-            rooms.add(new Room(nextId++, "Стандарт", "Уютный номер с видом на город", 3000, "/img/standard.jpg", true));
-            rooms.add(new Room(nextId++, "Люкс", "Просторный номер с джакузи", 7000, "/img/lux.jpg", true));
-            rooms.add(new Room(nextId++, "Семейный", "Две комнаты, идеально для семьи", 5000, "/img/family.jpg", true));
-            rooms.add(new Room(nextId++, "Эконом", "Бюджетный вариант", 1500, "/img/econom.jpg", false));
+            rooms.add(new Room(nextId++, "Стандарт", "Уютный номер с видом на город", 3000, "/images/rooms/папап.jpg", true));
+            rooms.add(new Room(nextId++, "Люкс", "Просторный номер с джакузи", 7000, "/images/rooms/йцйцй.webp", true));
+            rooms.add(new Room(nextId++, "Семейный", "Две комнаты", 5000, "/images/rooms/OIP.webp", true));
+            rooms.add(new Room(nextId++, "Эконом", "Бюджетный вариант", 1500, "/images/rooms/helo.jpg", false));
             save();
             System.out.println("Созданы тестовые номера");
         } else {
-            // Находим максимальный ID для nextId
             nextId = rooms.stream().mapToInt(Room::getId).max().orElse(0) + 1;
         }
     }

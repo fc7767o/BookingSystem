@@ -20,10 +20,8 @@ public class UserService {
 
     @PostConstruct
     public void init() {
-        // Загружаем пользователей
         List<?> loaded = storageService.loadList(FILE_NAME, Object.class);
 
-        // Конвертируем в User (нужно определить тип по полю role)
         for (Object obj : loaded) {
             Map<String, Object> map = (Map<String, Object>) obj;
             String role = (String) map.get("role");
@@ -47,7 +45,6 @@ public class UserService {
         }
 
         if (users.isEmpty()) {
-            // Создаём админа по умолчанию
             users.add(new Admin(nextId++, "admin", "12345", "Администратор"));
             save();
             System.out.println("✅ Создан админ: admin / 12345");
