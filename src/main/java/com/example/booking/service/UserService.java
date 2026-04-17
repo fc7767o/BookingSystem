@@ -1,6 +1,6 @@
 package com.example.booking.service;
 
-import com.example.booking.model.User;
+import com.example.booking.model.*;
 import org.springframework.stereotype.Service;
 import java.util.*;
 
@@ -10,7 +10,8 @@ public class UserService {
     private int nextId = 1;
 
     public UserService() {
-        users.add(new User(nextId++, "admin", "12345", "admin", "Администратор", ""));
+        users.add(new Admin(nextId++, "admin", "12345", "Администратор Системы"));
+        users.add(new Client(nextId++, "client", "123", "Клиент", "89996529322"));
     }
 
     public User login(String login, String password) {
@@ -20,10 +21,10 @@ public class UserService {
                 .orElse(null);
     }
 
-    public User register(String login, String password, String name, String phone) {
-        User user = new User(nextId++, login, password, "client", name, phone);
-        users.add(user);
-        return user;
+    public Client registerClient(String login, String password, String name, String phone) {
+        Client client = new Client(nextId++, login, password, name, phone);
+        users.add(client);
+        return client;
     }
 
     public User getUser(int id) {

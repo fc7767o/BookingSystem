@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Личный кабинет</title>
+    <style>
+        body { font-family: Arial; max-width: 1000px; margin: 20px auto; }
+        .room { border: 1px solid #ccc; margin: 15px 0; padding: 15px; border-radius: 8px; }
+        .inactive { opacity: 0.5; background: #f0f0f0; }
+        .booking { border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .status-pending { color: orange; }
+        .status-approved { color: blue; }
+        .status-rejected { color: red; }
+        .status-paid { color: green; }
+        .status-expired { color: gray; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .tabs { margin: 20px 0; }
+        .tab { padding: 10px 20px; background: #f0f0f0; border: none; cursor: pointer; }
+        .tab.active { background: #2196F3; color: white; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>Личный кабинет клиента</h1>
+    <div>
+        <span id="user-name"></span>
+        <button onclick="logout()">Выйти</button>
+    </div>
+</div>
+
+<div class="tabs">
+    <button class="tab active" onclick="showTab('rooms')">Доступные номера</button>
+    <button class="tab" onclick="showTab('bookings')">Мои бронирования</button>
+</div>
+
+<!-- Панель с номерами -->
+<div id="rooms-panel" class="panel active">
+    <h2>Выберите номер для бронирования</h2>
+    <div id="rooms-list"></div>
+</div>
+
+<!-- Панель с бронированиями -->
+<div id="bookings-panel" class="panel">
+    <h2>Мои заявки</h2>
+    <div id="bookings-list"></div>
+</div>
+
+<script>
+    let currentUser = JSON.parse(sessionStorage.getItem('user'));
+
+    if (!currentUser) {
+        window.location.href = '/';
+    }
+
+    document.getElementById('user-name').innerText = currentUser.name || currentUser.login;
+
+    function logout() {
+        sessionStorage.removeItem('user');
+        window.location.href = '/';
+    }
+
+    function showTab(tabName) {
+        // Скрываем все панели
+        document.getElementById('rooms-panel').style.display = 'none';
+        document.getElementById('bookings-panel').style.display = 'none';
+
+        // Убираем активный класс со всех вкладок
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+        // Показываем нужную панель
+        if (tabName === 'rooms') {
+            document.getElementById('rooms-panel').style.display = 'block';
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            loadRooms();
+        } else {
+            document.getElementById('bookings-panel').style.display = 'block';
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            loadMyBookings();
+        }
+    }
+
+    async function loadRooms() {
+        const response = await fetch('/api/rooms');
+        const rooms = await response.json();
+
+        const html = rooms.map(room => `
+            <div class="room ${room.active ? '' : 'inactive'}">
+                <h3>${room.title}</h3>
+                <p>${room.description}</p>
+                <p><strong>Цена:</strong> ${room.price} руб/ночь</p>
+                <p><strong>Статус:</strong> ${room.active ? '✅ Доступен' : '❌ Недоступен'}</p>
+                ${room.active ? `
+                    <input type="date" id="date-${room.id}" min="${new Date().toISOString().split('T')[0]}">
+                    <button onclick="bookRoom(${room.id})">Забронировать</button>
+                ` : ''}
+            </div>
+        `).join('');
+
+        document.getElementById('rooms-list').innerHTML = html;
+    }
+
+    async function bookRoom(roomId) {
+        const dateInput = document.getElementById(`date-${roomId}`);
+        const date = dateInput.value;
+
+        if (!date) {
+            alert('Выберите дату');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('clientId', currentUser.id);
+        formData.append('roomId', roomId);
+        formData.append('date', date);
+
+        const response = await fetch('/api/bookings/create', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Заявка создана! Ожидайте подтверждения администратора.');
+            showTab('bookings');
+        } else {
+            alert(data.message || 'Ошибка при создании брони');
+        }
+    }
+
+    async function loadMyBookings() {
+        const response = await fetch('/api/bookings/client/' + currentUser.id);
+        const bookings = await response.json();
+
+        const roomsResponse = await fetch('/api/rooms');
+        const rooms = await roomsResponse.json();
+
+        const html = bookings.reverse().map(booking => {
+            const room = rooms.find(r => r.id === booking.roomId);
+            const statusClass = 'status-' + booking.status;
+            const statusText = {
+                'pending': '⏳ Ожидает',
+                'approved': '✅ Одобрено (требуется оплата)',
+                'rejected': '❌ Отклонено',
+                'paid': '💰 Оплачено',
+                'expired': '⌛ Просрочено'
+            }[booking.status] || booking.status;
+
+            const deadline = booking.status === 'approved' ?
+                new Date(new Date(booking.createdAt).getTime() + 24*60*60*1000) : null;
+
+            return `
+                <div class="booking">
+                    <h3>${room?.title || 'Номер №' + booking.roomId}</h3>
+                    <p><strong>Дата:</strong> ${booking.date}</p>
+                    <p><strong>Цена:</strong> ${booking.price} руб</p>
+                    <p><strong>Статус:</strong> <span class="${statusClass}">${statusText}</span></p>
+                    ${booking.reason ? `<p><strong>Причина отказа:</strong> ${booking.reason}</p>` : ''}
+                    ${deadline ? `<p><strong>Оплатить до:</strong> ${deadline.toLocaleString()}</p>` : ''}
+                    ${booking.status === 'approved' ?
+                        `<button onclick="payBooking(${booking.id})">Оплатить</button>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('bookings-list').innerHTML = html || '<p>У вас пока нет бронирований</p>';
+    }
+
+    async function payBooking(bookingId) {
+        const response = await fetch('/api/bookings/' + bookingId + '/pay', {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Оплата принята!');
+            loadMyBookings();
+        } else {
+            alert(data.message);
+        }
+    }
+
+    // Загружаем комнаты при старте
+    loadRooms();
+</script>
+</body>
+</html>

@@ -1,25 +1,40 @@
 package com.example.booking.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Booking {
+
     private int id;
     private int clientId;
     private int roomId;
     private LocalDate date;
-    private String status;  // pending, approved, rejected, paid
-    private double price;   // зафиксированная цена
-    private String reason;  // причина отказа
+    private String status;
+    private double price;
+    private String reason;
+    private LocalDateTime createdAt;
 
-    public Booking() {}
+    public Booking() {
+        this.createdAt = LocalDateTime.now();
+    }
 
-    public Booking(int id, int clientId, int roomId, LocalDate date, String status, double price) {
+    public Booking(int id, int clientId, int roomId, LocalDate date, double price) {
         this.id = id;
         this.clientId = clientId;
         this.roomId = roomId;
         this.date = date;
-        this.status = status;
         this.price = price;
+        this.status = "pending";
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public void approve() {
+        this.status = "approved";
+    }
+
+    public void reject(String reason) {
+        this.status = "rejected";
+        this.reason = reason;
     }
 
     public int getId() { return id; }
@@ -42,4 +57,7 @@ public class Booking {
 
     public String getReason() { return reason; }
     public void setReason(String reason) { this.reason = reason; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

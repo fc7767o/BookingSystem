@@ -1,6 +1,6 @@
 package com.example.booking.controller;
 
-import com.example.booking.model.User;
+import com.example.booking.model.*;
 import com.example.booking.service.UserService;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
@@ -19,7 +19,11 @@ public class AuthController {
     public Map<String, Object> login(@RequestParam String login, @RequestParam String password) {
         User user = userService.login(login, password);
         if (user != null) {
-            return Map.of("success", true, "user", user);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("user", user);
+            response.put("role", user.getRole());
+            return response;
         }
         return Map.of("success", false, "message", "Неверный логин или пароль");
     }
@@ -29,7 +33,7 @@ public class AuthController {
                                         @RequestParam String password,
                                         @RequestParam String name,
                                         @RequestParam String phone) {
-        User user = userService.register(login, password, name, phone);
-        return Map.of("success", true, "user", user);
+        Client client = userService.registerClient(login, password, name, phone);
+        return Map.of("success", true, "user", client);
     }
 }

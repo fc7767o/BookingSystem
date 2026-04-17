@@ -5,7 +5,7 @@ public class Room {
     private String title;
     private String description;
     private double price;
-    private String photo;  // URL или имя файла
+    private String photo;
     private boolean active;
 
     public Room() {}
@@ -17,6 +17,14 @@ public class Room {
         this.price = price;
         this.photo = photo;
         this.active = active;
+    }
+
+    public void updatePrice(double newPrice) {
+        this.price = newPrice;
+    }
+
+    public void setActive(boolean status) {
+        this.active = status;
     }
 
     public int getId() { return id; }
@@ -35,5 +43,4 @@ public class Room {
     public void setPhoto(String photo) { this.photo = photo; }
 
     public boolean isActive() { return active; }
-    public void setActive(boolean active) { this.active = active; }
 }

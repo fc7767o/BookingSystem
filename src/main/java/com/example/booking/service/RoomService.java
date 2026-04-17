@@ -10,10 +10,9 @@ public class RoomService {
     private int nextId = 1;
 
     public RoomService() {
-        // Добавляем тестовые номера
-        rooms.add(new Room(nextId++, "Стандарт", "Уютный номер с видом на город", 3000, "/img/standard.jpg", true));
-        rooms.add(new Room(nextId++, "Люкс", "Просторный номер с джакузи", 7000, "/img/lux.jpg", true));
-        rooms.add(new Room(nextId++, "Семейный", "Две комнаты, идеально для семьи", 5000, "/img/family.jpg", true));
+        rooms.add(new Room(nextId++, "Стандарт", "Номер с видом на город", 3000, "/img/standard.jpg", true));
+        rooms.add(new Room(nextId++, "Люкс", "Номер с джакузи", 7000, "/img/lux.jpg", true));
+        rooms.add(new Room(nextId++, "Семейный", "Две комнаты", 5000, "/img/family.jpg", true));
         rooms.add(new Room(nextId++, "Эконом", "Бюджетный вариант", 1500, "/img/econom.jpg", false));
     }
 
