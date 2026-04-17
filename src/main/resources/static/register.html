@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация</title>
+</head>
+<body>
+<h1>Регистрация клиента</h1>
+
+<form id="register-form">
+    <input type="text" id="login" placeholder="Логин" required>
+    <input type="password" id="password" placeholder="Пароль" required>
+    <input type="text" id="name" placeholder="Ваше имя" required>
+    <input type="tel" id="phone" placeholder="Телефон" required>
+    <button type="submit">Зарегистрироваться</button>
+</form>
+
+<p>Уже есть аккаунт? <a href="/">Войти</a></p>
+<p id="message"></p>
+
+<script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const login = document.getElementById('login').value;
+        const password = document.getElementById('password').value;
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+
+        const formData = new FormData();
+        formData.append('login', login);
+        formData.append('password', password);
+        formData.append('name', name);
+        formData.append('phone', phone);
+
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            document.getElementById('message').innerText = 'Регистрация успешна! Выполняется вход...';
+
+            // Автоматический вход после регистрации
+            const loginFormData = new FormData();
+            loginFormData.append('login', login);
+            loginFormData.append('password', password);
+
+            const loginResponse = await fetch('/api/auth/login', {
+                method: 'POST',
+                body: loginFormData
+            });
+
+            const loginData = await loginResponse.json();
+
+            if (loginData.success) {
+                sessionStorage.setItem('user', JSON.stringify(loginData.user));
+                window.location.href = '/client.html';
+            } else {
+                window.location.href = '/';
+            }
+        } else {
+            document.getElementById('message').innerText = data.message || 'Ошибка регистрации';
+        }
+    });
+</script>
+</body>
+</html>
