@@ -18,6 +18,7 @@ public class Booking {
         this.createdAt = LocalDateTime.now();
     }
 
+
     public Booking(int id, int clientId, int roomId, LocalDate date, double price) {
         this.id = id;
         this.clientId = clientId;

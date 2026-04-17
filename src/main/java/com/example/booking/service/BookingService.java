@@ -1,127 +1,112 @@
 package com.example.booking.service;
 
 import com.example.booking.model.Booking;
-import com.example.booking.model.Room;
-import com.example.booking.model.User;
-import com.example.booking.model.Client;
+import jakarta.annotation.PostConstruct;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
 public class BookingService {
+
+    private final StorageService storageService;
     private List<Booking> bookings = new ArrayList<>();
     private int nextId = 1;
 
-    /**
-     * Получить все бронирования (для админа)
-     */
+    private static final String FILE_NAME = "bookings.json";
+
+    public BookingService(StorageService storageService) {
+        this.storageService = storageService;
+    }
+
+    @PostConstruct
+    public void init() {
+        bookings = storageService.loadList(FILE_NAME, Booking.class);
+
+        if (!bookings.isEmpty()) {
+            nextId = bookings.stream().mapToInt(Booking::getId).max().orElse(0) + 1;
+        }
+
+        System.out.println("📂 Загружено бронирований: " + bookings.size());
+    }
+
+    private void save() {
+        storageService.saveList(FILE_NAME, bookings);
+    }
+
     public List<Booking> getAllBookings() {
         return bookings;
     }
 
-    /**
-     * Получить бронирования конкретного клиента
-     */
     public List<Booking> getBookingsByClient(int clientId) {
-        return bookings.stream()
-                .filter(b -> b.getClientId() == clientId)
-                .toList();
+        return bookings.stream().filter(b -> b.getClientId() == clientId).toList();
     }
 
-    /**
-     * Получить бронирования по статусу
-     */
     public List<Booking> getBookingsByStatus(String status) {
-        return bookings.stream()
-                .filter(b -> b.getStatus().equals(status))
-                .toList();
+        return bookings.stream().filter(b -> b.getStatus().equals(status)).toList();
     }
 
-    /**
-     * Получить ожидающие бронирования (для админа)
-     */
     public List<Booking> getPendingBookings() {
         return getBookingsByStatus("pending");
     }
 
-    /**
-     * Создать новую заявку на бронирование
-     * Цена фиксируется на момент создания
-     */
     public Booking createBooking(int clientId, int roomId, LocalDate date, double price) {
         Booking booking = new Booking(nextId++, clientId, roomId, date, price);
         bookings.add(booking);
+        save();
+        System.out.println("✅ Создана заявка #" + booking.getId());
         return booking;
     }
 
-    /**
-     * Одобрить бронирование (метод делегирует в Booking)
-     */
     public void approveBooking(int id) {
         Booking booking = findBooking(id);
         if (booking != null) {
             booking.approve();
+            save();
+            System.out.println("✅ Заявка #" + id + " одобрена");
         }
     }
 
-    /**
-     * Отклонить бронирование с причиной (метод делегирует в Booking)
-     */
     public void rejectBooking(int id, String reason) {
         Booking booking = findBooking(id);
         if (booking != null) {
             booking.reject(reason);
+            save();
+            System.out.println("❌ Заявка #" + id + " отклонена");
         }
     }
 
-    /**
-     * Отметить как оплаченное
-     */
     public void markAsPaid(int id) {
         Booking booking = findBooking(id);
         if (booking != null) {
             booking.setStatus("paid");
+            save();
+            System.out.println("💰 Заявка #" + id + " оплачена");
         }
     }
 
-    /**
-     * Проверить и сбросить просроченные брони (24 часа не оплачены)
-     */
-    public void expireUnpaidBookings() {
+    @Scheduled(fixedRate = 1800000) // 30 минут
+    public void autoExpireBookings() {
         LocalDateTime now = LocalDateTime.now();
+        boolean changed = false;
+
         for (Booking b : bookings) {
             if (b.getStatus().equals("approved")) {
                 if (b.getCreatedAt().plusHours(24).isBefore(now)) {
                     b.setStatus("expired");
+                    changed = true;
+                    System.out.println("⏰ Бронь #" + b.getId() + " просрочена");
                 }
             }
         }
+
+        if (changed) {
+            save();
+        }
     }
 
-    /**
-     * Найти бронирование по ID
-     */
-    private Booking findBooking(int id) {
-        return bookings.stream()
-                .filter(b -> b.getId() == id)
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * Получить бронирование по ID (публичный метод)
-     */
-    public Booking getBooking(int id) {
-        return findBooking(id);
-    }
-
-    /**
-     * Проверить, свободен ли номер на дату
-     */
     public boolean isRoomAvailable(int roomId, LocalDate date) {
         return bookings.stream()
                 .filter(b -> b.getRoomId() == roomId)
@@ -132,25 +117,11 @@ public class BookingService {
                 .isEmpty();
     }
 
-    /**
-     * Автоматически проверяет и истекает неоплаченные брони каждые 30 минут
-//     */
-    @Scheduled(fixedRate = 1800000) // 60000
-    public void autoExpireBookings() {
-        LocalDateTime now = LocalDateTime.now();
-        int expiredCount = 0;
+    private Booking findBooking(int id) {
+        return bookings.stream().filter(b -> b.getId() == id).findFirst().orElse(null);
+    }
 
-        for (Booking b : bookings) {
-            if (b.getStatus().equals("approved")) {
-                if (b.getCreatedAt().plusHours(24).isBefore(now)) { //plusMinutes(1)
-                    b.setStatus("expired");
-                    expiredCount++;
-                }
-            }
-        }
-
-        if (expiredCount > 0) {
-            System.out.println("Авто-истечение: " + expiredCount + " броней переведены в expired");
-        }
+    public Booking getBooking(int id) {
+        return findBooking(id);
     }
 }
