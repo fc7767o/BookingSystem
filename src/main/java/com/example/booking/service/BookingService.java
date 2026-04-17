@@ -4,9 +4,11 @@ import com.example.booking.model.Booking;
 import com.example.booking.model.Room;
 import com.example.booking.model.User;
 import com.example.booking.model.Client;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -128,5 +130,27 @@ public class BookingService {
                 .filter(b -> !b.getStatus().equals("expired"))
                 .findAny()
                 .isEmpty();
+    }
+
+    /**
+     * Автоматически проверяет и истекает неоплаченные брони каждые 30 минут
+//     */
+    @Scheduled(fixedRate = 1800000) // 60000
+    public void autoExpireBookings() {
+        LocalDateTime now = LocalDateTime.now();
+        int expiredCount = 0;
+
+        for (Booking b : bookings) {
+            if (b.getStatus().equals("approved")) {
+                if (b.getCreatedAt().plusHours(24).isBefore(now)) { //plusMinutes(1)
+                    b.setStatus("expired");
+                    expiredCount++;
+                }
+            }
+        }
+
+        if (expiredCount > 0) {
+            System.out.println("Авто-истечение: " + expiredCount + " броней переведены в expired");
+        }
     }
 }

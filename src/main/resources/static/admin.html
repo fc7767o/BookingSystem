@@ -26,9 +26,9 @@
     <button class="filter-btn" data-filter="approved" onclick="filterBookings('approved')">Одобрены</button>
     <button class="filter-btn" data-filter="rejected" onclick="filterBookings('rejected')">Отклонены</button>
     <button class="filter-btn" data-filter="paid" onclick="filterBookings('paid')">Оплачены</button>
+    <button class="filter-btn" data-filter="expired" onclick="filterBookings('expired')">Просрочены</button>
     <button onclick="checkExpired()">Проверить просроченные</button>
 </div>
-<h2 id="rooms-title">🏨 Управление номерами</h2>
 <div id="rooms-section">
     <div id="rooms-management"></div>
 </div>
@@ -139,11 +139,11 @@ function renderBookings() {
         card.className = 'booking-card';
 
         const statusText = {
-            'pending': '⏳ Ожидает',
-            'approved': '✅ Одобрено',
-            'rejected': '❌ Отклонено',
-            'paid': '💰 Оплачено',
-            'expired': '⌛ Просрочено'
+            'pending': 'Ожидает',
+            'approved': 'Одобрено',
+            'rejected': 'Отклонено',
+            'paid': 'Оплачено',
+            'expired': 'Просрочено'
         }[booking.status] || booking.status;
 
         card.innerHTML = `
@@ -155,8 +155,8 @@ function renderBookings() {
             <p><strong>Статус:</strong> ${statusText}</p>
             ${booking.reason ? `<p><strong>Причина отказа:</strong> ${booking.reason}</p>` : ''}
             ${booking.status === 'pending' ? `
-                <button onclick="approveBooking(${booking.id})">✅ Одобрить</button>
-                <button onclick="rejectBooking(${booking.id})">❌ Отклонить</button>
+                <button onclick="approveBooking(${booking.id})">Одобрить</button>
+                <button onclick="rejectBooking(${booking.id})">Отклонить</button>
             ` : ''}
         `;
 
@@ -237,6 +237,18 @@ function filterBookings(filter) {
 
         alert(`Найдено просроченных броней (более 24 часов без оплаты): ${expiredCount}`);
     }
+
+    async function checkExpired() {
+    const response = await fetch('/api/bookings/check-expired', {
+        method: 'POST'
+    });
+
+    const data = await response.json();
+    alert(data.message || 'Проверка выполнена');
+
+    // Перезагружаем список заявок
+    loadAllBookings();
+}
 
     // Загрузка при старте
     loadRoomsForAdmin();

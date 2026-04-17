@@ -91,7 +91,7 @@
                 <h3>${room.title}</h3>
                 <p>${room.description}</p>
                 <p><strong>Цена:</strong> ${room.price} руб/ночь</p>
-                <p><strong>Статус:</strong> ${room.active ? '✅ Доступен' : '❌ Недоступен'}</p>
+                <p><strong>Статус:</strong> ${room.active ? 'Доступен' : 'Недоступен'}</p>
                 ${room.active ? `
                     <input type="date" id="date-${room.id}" min="${new Date().toISOString().split('T')[0]}">
                     <button onclick="bookRoom(${room.id})">Забронировать</button>
@@ -142,11 +142,11 @@
             const room = rooms.find(r => r.id === booking.roomId);
             const statusClass = 'status-' + booking.status;
             const statusText = {
-                'pending': '⏳ Ожидает',
-                'approved': '✅ Одобрено (требуется оплата)',
-                'rejected': '❌ Отклонено',
-                'paid': '💰 Оплачено',
-                'expired': '⌛ Просрочено'
+                'pending': 'Ожидает',
+                'approved': 'Одобрено (требуется оплата)',
+                'rejected': 'Отклонено',
+                'paid': 'Оплачено',
+                'expired': 'Просрочено'
             }[booking.status] || booking.status;
 
             const deadline = booking.status === 'approved' ?

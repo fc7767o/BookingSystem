@@ -129,4 +129,10 @@ public class BookingController {
 
         return Map.of("available", available);
     }
+
+    @PostMapping("/check-expired")
+    public Map<String, Object> checkExpired() {
+        bookingService.autoExpireBookings(); // Вызываем тот же метод
+        return Map.of("success", true, "message", "Проверка выполнена");
+    }
 }
